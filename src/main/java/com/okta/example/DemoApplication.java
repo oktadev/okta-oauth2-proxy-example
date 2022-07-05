@@ -18,10 +18,10 @@ import java.util.Map;
 import static java.util.Collections.emptyList;
 
 @SpringBootApplication
-public class DemoApplication {
+public class EchoApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(DemoApplication.class, args);
+        SpringApplication.run(EchoApplication.class, args);
     }
 
     @RestController
