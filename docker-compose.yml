@@ -7,27 +7,52 @@ services:
 
   oauth2-proxy:
     image: bitnami/oauth2-proxy:7.3.0
-    container_name: oauth2-proxy
-    hostname: oauth2-proxy
+    depends_on:
+      - redis
     command:
       - --http-address
       - 0.0.0.0:4180
     environment:
-      OAUTH2_PROXY_PROVIDER: oidc
-      OAUTH2_PROXY_OIDC_EMAIL_CLAIM: sub
-      OAUTH2_PROXY_OIDC_ISSUER_URL: https://dev-l33337.okta.com/oauth2/default
-      OAUTH2_PROXY_CLIENT_ID: api://default
-      OAUTH2_PROXY_CLIENT_SECRET: NOT_USED_BUT_REQUIRED_VALUE
       OAUTH2_PROXY_EMAIL_DOMAINS: '*'
+      OAUTH2_PROXY_PROVIDER: oidc
+      OAUTH2_PROXY_PROVIDER_DISPLAY_NAME: Okta
+      OAUTH2_PROXY_SKIP_PROVIDER_BUTTON: true
+      OAUTH2_PROXY_REDIRECT_URL: http://localhost/oauth2/callback
+
+      OAUTH2_PROXY_OIDC_ISSUER_URL: ${ISSUER}
+      OAUTH2_PROXY_CLIENT_ID: ${CLIENT_ID}
+      OAUTH2_PROXY_CLIENT_SECRET: ${CLIENT_SECRET}
+
       OAUTH2_PROXY_SKIP_JWT_BEARER_TOKENS: true
+      OAUTH2_PROXY_OIDC_EXTRA_AUDIENCES: api://default
+      OAUTH2_PROXY_OIDC_EMAIL_CLAIM: sub
+
       OAUTH2_PROXY_SET_XAUTHREQUEST: true
-      OAUTH2_PROXY_COOKIE_SECRET: NOT_USED_BUT_REQUIRED_VALUE_32b_
-      
+      OAUTH2_PROXY_PASS_ACCESS_TOKEN: true
+
+      OAUTH2_PROXY_SESSION_STORE_TYPE: redis
+      OAUTH2_PROXY_REDIS_CONNECTION_URL: redis://redis
+
+      OAUTH2_PROXY_COOKIE_REFRESH: 30m
+      OAUTH2_PROXY_COOKIE_NAME: SESSION
+      OAUTH2_PROXY_COOKIE_SECRET: ${OAUTH2_PROXY_COOKIE_SECRET}
+
   nginx:
     image: nginx:1.21.6-alpine
     depends_on:
       - oauth2-proxy
+      - web-app
     volumes:
       - ./nginx-default.conf.template:/etc/nginx/templates/default.conf.template
+      - ./static-html:/usr/share/nginx/html # Not covered in blog post, adds a simple HTML page to test sign-out
     ports:
       - 80:80
+
+  redis:
+    image: redis:7.0.2-alpine3.16
+    volumes:
+      - cache:/data
+
+volumes:
+  cache:
+    driver: local
